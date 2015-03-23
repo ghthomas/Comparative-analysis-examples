@@ -1,0 +1,16 @@
+---
+title: "Evolutionary rates analyses in MOTMOT"
+output: html_document
+---
+
+This is a short guide to running evolutionary rates analyses in the MOTMOT package. The guide conducts the types of analyses described in [Thomas et al. (2006)](http://www.ncbi.nlm.nih.gov/pmc/articles/PMC1634920/) and [Thomas et al. (2009)](http://www.tau.ac.il/lifesci/departments/zoology/members/meiri/documents/Thomasetal2009sizediversificationinAnolis.pdf) to test for variation in rates of phenotypic evolution associated with a discrete explanatory variable. The analyses require a time calibrated phylogeny, a discrete explanatory variable and a continuous response variable.
+
+We will start by getting MOTMOT installed. It is currently only available on github so first we need to load the devtools library.
+
+```{r, eval=FALSE}
+library(devtools)
+install_github("ghthomas/motmot")
+library(motmot)
+```
+
+Now we need to get the data. We will use a phylogeny of shorebirds and data on development mode and sexual size dimorphism from shorebirds.
