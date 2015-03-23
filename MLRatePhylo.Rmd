@@ -14,4 +14,8 @@ Now we need to get the data. We will use a phylogeny of shorebirds and data on d
 
 For what follows I assume that the phylogeny and data are in a folder called 'data'.
 
+```{r}
+phy <- read.nexus("data/ShorebirdSupertree.tre")
+dat <- read.table("data/ratesdata.txt")
+```
 
