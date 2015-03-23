@@ -63,7 +63,7 @@ img {
 
 <div id="evolutionary-rates-analyses-in-motmot" class="section level1">
 <h1>Evolutionary rates analyses in MOTMOT</h1>
-<p>This is a short guide to running evolutionary rates analyses in the <code>MOTMOT</code> package. The guide conducts the types of analyses described in <a href="http://www.ncbi.nlm.nih.gov/pmc/articles/PMC1634920/">Thomas et al. (2006)</a> and <a href="http://www.tau.ac.il/lifesci/departments/zoology/members/meiri/documents/Thomasetal2009sizediversificationinAnolis.pdf">Thomas et al. (2009)</a> to test for variation in rates of phenotypic evolution associated with a discrete explanatory variable. The analyses require a time calibrated phylogeny, a discrete explanatory variable and a continuous response variable. The example below asks whether the rate of evolution of sexual size dimorphism in body mass differs depending on the developmental mode (precocial, ambiguous, semiprecocial) of the chicks in shorebirds.</p>
+<p>This is a short guide to running evolutionary rates analyses in the <code>MOTMOT</code> package. The guide conducts the types of analyses described in <a href="http://www.ncbi.nlm.nih.gov/pmc/articles/PMC1634920/">Thomas et al. (2006)</a> and <a href="http://www.tau.ac.il/lifesci/departments/zoology/members/meiri/documents/Thomasetal2009sizediversificationinAnolis.pdf">Thomas et al. (2009)</a> to test for variation in rates of phenotypic evolution associated with a discrete explanatory variable. The analyses require a time calibrated phylogeny, a discrete explanatory variable and a continuous response variable. The example below asks whether the rate of evolution of sexual size dimorphism in body mass differs depending on the developmental mode (precocial, intermediate, semiprecocial) of the chicks in shorebirds.</p>
 <div id="getting-started" class="section level3">
 <h3>Getting started</h3>
 <p>We will start by getting <code>MOTMOT</code> installed. It is currently only available on github so first we need to load the devtools library.</p>
@@ -94,7 +94,7 @@ names(states) &lt;- rownames(dat)</code></pre>
 ## Loading required package: Rcpp</code></pre>
 <pre class="r"><code>lik &lt;- make.mkn(phy, states=states, k=3)
 transRates &lt;- find.mle(lik, x.init=rep(0.1,6))
-set.seed(1)
+set.seed(1) # using set.seed for repeatibility of ASR estimates, in practice it is useful to explore many reconstructions
 asrDM &lt;- asr.stoch(lik, transRates$par)</code></pre>
 <p>The reconstruction from diversitree provides an estimate of the character state at each internal node. We can use this to divide the phylogeny into rate regimes. First we need to assign the estimated ancestral states to node lables in the phylo object.</p>
 <pre class="r"><code>phy$node.label &lt;- asrDM$node.state</code></pre>
@@ -129,7 +129,7 @@ shorebirdRD &lt;- as.rateData(y=&quot;ssdmass&quot;, x=&quot;dm&quot;, rateMatri
 ##   Single rate AIC =  -505.4   
 ##   Single rate AICc =  -505.1   
 ## ____________________________</code></pre>
-<p>The table below gives a brief descritpion of the model output. The conclusions that we can draw from the model output here is that rates differ among groups. Specifically, the rate of evolution of sexual size dimorphism is higher</p>
+<p>The table below gives a brief descritpion of the model output. The conclusions that we can draw from the model output here is that rates differ among groups. Specifically, the rate of evolution of sexual size dimorphism is faster (a little more than twice as fast) among precocial taxa than semiprecocial or intermediate data.</p>
 <table>
 <thead>
 <tr class="header">
@@ -221,6 +221,7 @@ shorebirdRD &lt;- as.rateData(y=&quot;ssdmass&quot;, x=&quot;dm&quot;, rateMatri
 ##   Single rate AIC =  -499.1   
 ##   Single rate AICc =  -499.1   
 ## ____________________________</code></pre>
+<p>Now that we fix the mean value for SSD to be equal, we get some slightly odd results. The model AIC values are lower when we don’t allow different means, suggesting that means do differ among states. If we were to ignore that then we might conclude that the highest rates are among taxa with intermediate developmental modes. We should be cautious with such a conclusion because only seven species have intermediate developmental mode. With such a low sample size rates are not estimated reliably and will likely have large confidence intervals. As a rule of thumb, there should be at least 20 species to each character state, although exactly how a model behaves depends also on the overall proportions of species in each state and the shape of the phylogeny. If we ignore the intermediate species, we still find evidence that rates of evolution are higher among precocial than semiprecocial taxa.</p>
 </div>
 </div>
 
