@@ -1,3 +1,7 @@
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(cache=TRUE)
+```
+
 Evolutionary rates analyses in MOTMOT
 =====================================
 
@@ -6,9 +10,7 @@ This is a short guide to running evolutionary rates analyses in the ```MOTMOT```
 ### Getting started
 We will start by getting ```MOTMOT``` installed. It is currently only available on github so first we need to load the devtools library.
 
-```{r setup, include=FALSE, echo=FALSE}
-knitr::opts_chunk$set(cache=TRUE)
-```
+
 ```{r, eval=FALSE}
 library(devtools)
 install_github("ghthomas/motmot")
