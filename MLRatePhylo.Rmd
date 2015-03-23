@@ -10,4 +10,8 @@ install_github("ghthomas/motmot")
 library(motmot)
 ```
 
-Now we need to get the data. We will use a phylogeny of shorebirds and data on development mode and sexual size dimorphism from shorebirds.
+Now we need to get the data. We will use a phylogeny of shorebirds and data on development mode and sexual size dimorphism from shorebirds. The data can be accessed from the data folder [here](https://github.com/ghthomas/Comparative-analysis-examples).
+
+For what follows I assume that the phylogeny and data are in a folder called 'data'.
+
+
