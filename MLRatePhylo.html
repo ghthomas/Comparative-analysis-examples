@@ -61,14 +61,167 @@ img {
 
 
 
-<div id="evolutionary-rates-analyses-in-motmot" class="section level3">
-<h3>Evolutionary rates analyses in MOTMOT</h3>
-<p>This is a short guide to running evolutionary rates analyses in the MOTMOT package. The guide conducts the types of analyses described in <a href="http://www.ncbi.nlm.nih.gov/pmc/articles/PMC1634920/">Thomas et al. (2006)</a> and <a href="http://www.tau.ac.il/lifesci/departments/zoology/members/meiri/documents/Thomasetal2009sizediversificationinAnolis.pdf">Thomas et al. (2009)</a> to test for variation in rates of phenotypic evolution associated with a discrete explanatory variable. The analyses require a time calibrated phylogeny, a discrete explanatory variable and a continuous response variable.</p>
-<p>We will start by getting MOTMOT installed. It is currently only available on github so first we need to load the devtools library.</p>
+<div id="evolutionary-rates-analyses-in-motmot" class="section level1">
+<h1>Evolutionary rates analyses in MOTMOT</h1>
+<p>This is a short guide to running evolutionary rates analyses in the <code>MOTMOT</code> package. The guide conducts the types of analyses described in <a href="http://www.ncbi.nlm.nih.gov/pmc/articles/PMC1634920/">Thomas et al. (2006)</a> and <a href="http://www.tau.ac.il/lifesci/departments/zoology/members/meiri/documents/Thomasetal2009sizediversificationinAnolis.pdf">Thomas et al. (2009)</a> to test for variation in rates of phenotypic evolution associated with a discrete explanatory variable. The analyses require a time calibrated phylogeny, a discrete explanatory variable and a continuous response variable. The example below asks whether the rate of evolution of sexual size dimorphism in body mass differs depending on the developmental mode (precocial, ambiguous, semiprecocial) of the chicks in shorebirds.</p>
+<div id="getting-started" class="section level3">
+<h3>Getting started</h3>
+<p>We will start by getting <code>MOTMOT</code> installed. It is currently only available on github so first we need to load the devtools library.</p>
 <pre class="r"><code>library(devtools)
-install_github(&quot;ghthomas/motmot&quot;)
-library(motmot)</code></pre>
-<p>Now we need to get the data. We will use a phylogeny of shorebirds and data on development mode and sexual size dimorphism from shorebirds. The data can be accessed from the data folder <a href="https://github.com/ghthomas/Comparative-analysis-examples">here</a>.</p>
+install_github(&quot;ghthomas/motmot&quot;)</code></pre>
+</div>
+<div id="preparing-the-data" class="section level3">
+<h3>Preparing the data</h3>
+<p>Now we need to load momtot and get the data. We will use a phylogeny of shorebirds and data on development mode and sexual size dimorphism from shorebirds. The data can be accessed from the data folder <a href="https://github.com/ghthomas/Comparative-analysis-examples">here</a>.</p>
+<p>For what follows I assume that the phylogeny and data are in a folder called ‘data’.</p>
+<pre class="r"><code>library(motmot)</code></pre>
+<pre><code>## Loading required package: ape
+## Loading required package: mvtnorm
+## Loading required package: MASS
+## Loading required package: caper
+## Loading required package: parallel</code></pre>
+<pre class="r"><code>phy &lt;- read.nexus(&quot;data/ShorebirdSupertree.tre&quot;)
+dat &lt;- read.table(&quot;data/ratesdata.txt&quot;)</code></pre>
+<p>The first thing we need to do is reconstruct ancestral states for our discrete explanatory variable. In this case that is developmental mode, here scored as a three level variable. The data and phylogeny have differing sets of species (the data contain a subset of species in the phylogeny) and we need to match them up first.</p>
+<pre class="r"><code>phy &lt;- drop.tip(phy, setdiff(phy$tip.label, rownames(dat)))</code></pre>
+<p>Next we create a new vector of character states for our explanatory variable</p>
+<pre class="r"><code>states &lt;- dat[,1]
+names(states) &lt;- rownames(dat)</code></pre>
+<p>Now we are ready to reconstruct ancestral states. There are numerous ways that we could do this for example, similar analyses in phytools split the tree into regimes defined by stochastic character state mapping.. For now we will use the stochastic reconstruction at nodes option from the diversitree package.</p>
+<pre class="r"><code>library(diversitree)</code></pre>
+<pre><code>## Loading required package: deSolve
+## Loading required package: subplex
+## Loading required package: Rcpp</code></pre>
+<pre class="r"><code>lik &lt;- make.mkn(phy, states=states, k=3)
+transRates &lt;- find.mle(lik, x.init=rep(0.1,6))
+set.seed(1)
+asrDM &lt;- asr.stoch(lik, transRates$par)</code></pre>
+<p>The reconstruction from diversitree provides an estimate of the character state at each internal node. We can use this to divide the phylogeny into rate regimes. First we need to assign the estimated ancestral states to node lables in the phylo object.</p>
+<pre class="r"><code>phy$node.label &lt;- asrDM$node.state</code></pre>
+<p>Now we can input all of this motmot to prepare the data for analysis.</p>
+<pre class="r"><code>shorebirdRM &lt;- as.rateMatrix(phy=phy, x=&quot;dm&quot;, data=dat)
+shorebirdRD &lt;- as.rateData(y=&quot;ssdmass&quot;, x=&quot;dm&quot;, rateMatrix = shorebirdRM, phy=NULL, data=dat, log.y=FALSE)</code></pre>
+</div>
+<div id="running-the-rates-analyses" class="section level3">
+<h3>Running the rates analyses</h3>
+<p>The object shorebirdRD contain all of the data bundled up and ready to run. We will start with the most complex model. Here each category for developmentmal mode can have its own rate of evolution and its own mean value for the response variable (sexual size dimorphism in body mass). The command <code>fixed</code> is used to determine which states of the explanatory variable have rates estimated and which have rates that are fixed for the response. I recommend always fixing at least one rate. You can do this by setting TRUE or by entering a numeric value. If you enter a value, this will be used to determine the relative rate in the fixed state. In practice, the choice of which state to fix is not important because rates are reported as relative rather than absolute values. In the first example we fixed the rate for state 1 (species with precocial developmental mode) and estimate rates for the other two states (2=ambiguous development and 3=semiprecocial development).</p>
+<pre class="r"><code>ML.RatePhylo(shorebirdRD, fixed=c(TRUE,FALSE,FALSE))</code></pre>
+<pre><code>## ____________________________
+## Maximum likelihood estimation: rates:
+## 
+## Lambda:           0.8013 
+## Brownian variance (rate):  0.0002098 
+## ML estimates of group relative rates :           1 1.019 0.4381 
+## Lower confidence intervals for rates: NA 
+## Upper confidence intervals for rates: NA 
+## ML estimates of group means :  -0.03766 0.04332 -0.00169 
+## 
+## Number of parameters:  7 
+## Maximised log likelihood:  262.4 
+##   AIC =  -510.7   
+##   AICc =  -510   
+## 
+## ____________________________
+## Comparison with single rate model
+## Lambda (single rate model):           0.803 
+## Log likelihood (single rate):  256.7 
+## LR statistic (ML rates vs single rate): 11.35  P =  0.003423 df =  2  
+##   Single rate AIC =  -505.4   
+##   Single rate AICc =  -505.1   
+## ____________________________</code></pre>
+<p>The table below gives a brief descritpion of the model output. The conclusions that we can draw from the model output here is that rates differ among groups. Specifically, the rate of evolution of sexual size dimorphism is higher</p>
+<table>
+<thead>
+<tr class="header">
+<th align="left">Output</th>
+<th align="left">description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">Lambda</td>
+<td align="left">Estimate of Pagel’s lambda</td>
+</tr>
+<tr class="even">
+<td align="left">Brownian variance (rate)</td>
+<td align="left">Absolute rate of phenotypic evolution for the fixed state</td>
+</tr>
+<tr class="odd">
+<td align="left">Lower confidence intervals for rates</td>
+<td align="left">Approximate lower confidence interval for each rate</td>
+</tr>
+<tr class="even">
+<td align="left">Upper confidence intervals for rates</td>
+<td align="left">Approximate upper confidence interval for each rate</td>
+</tr>
+<tr class="odd">
+<td align="left">ML estimates of group means</td>
+<td align="left">Estimates of the mean value for the continuous variable in each state</td>
+</tr>
+<tr class="even">
+<td align="left">Number of parameters</td>
+<td align="left">Parameters estimated in the model (includes rates, means and Pagel’s lambda)</td>
+</tr>
+<tr class="odd">
+<td align="left">Maximised log likelihood</td>
+<td align="left">ML estimate for the model</td>
+</tr>
+<tr class="even">
+<td align="left">AIC</td>
+<td align="left">Model AIC</td>
+</tr>
+<tr class="odd">
+<td align="left">AICc</td>
+<td align="left">Model small-sample AIC</td>
+</tr>
+<tr class="even">
+<td align="left">Lambda (single rate model)</td>
+<td align="left">Estimate of Pagel’s lambda for a model with all rates equal</td>
+</tr>
+<tr class="odd">
+<td align="left">Log likelihood (single rate)</td>
+<td align="left">ML estimate for the model with all rates equal</td>
+</tr>
+<tr class="even">
+<td align="left">LR statistic (ML rates vs single rate)</td>
+<td align="left">Likelihood ratio test comparing the all rates equal model with the fitted model</td>
+</tr>
+<tr class="odd">
+<td align="left">Single rate AIC</td>
+<td align="left">Single rate AIC</td>
+</tr>
+<tr class="even">
+<td align="left">Single rate AICc</td>
+<td align="left">Single rate small-sample AIC</td>
+</tr>
+</tbody>
+</table>
+<p>In the first example we allowed the mean value for sexual size dimorphism to differ among states. My personal view is that this is always a sensible thing to do, but we can test whether means differ while also allowing rates to differ. This is not hugely different from some of the models in the <code>ouwie</code> package that fit OU models with variable rates.</p>
+<pre class="r"><code>ML.RatePhylo(shorebirdRD, fixed=c(FALSE,FALSE,FALSE), common.mean=TRUE)</code></pre>
+<pre><code>## ____________________________
+## Maximum likelihood estimation: rates:
+## 
+## Lambda:           0.8483 
+## Brownian variance (rate):  0.0001341 
+## ML estimates of group relative rates :           1.425 2.434 0.7221 
+## Lower confidence intervals for rates: NA 
+## Upper confidence intervals for rates: NA 
+## ML estimates of group means :  -0.01134 
+## 
+## Number of parameters:  5 
+## Maximised log likelihood:  258.8 
+##   AIC =  -507.7   
+##   AICc =  -507.3   
+## 
+## ____________________________
+## Comparison with single rate model
+## Lambda (single rate model):           0.8092 
+## Log likelihood (single rate):  251.6 
+## LR statistic (ML rates vs single rate): 14.5  P =  0.0007091 df =  2  
+##   Single rate AIC =  -499.1   
+##   Single rate AICc =  -499.1   
+## ____________________________</code></pre>
+</div>
 </div>
 
 
