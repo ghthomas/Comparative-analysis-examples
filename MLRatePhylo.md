@@ -1,6 +1,4 @@
----
-output: word_document
----
+
 Evolutionary rates analyses in MOTMOT
 =====================================
 
