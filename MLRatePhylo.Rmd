@@ -1,3 +1,9 @@
+---
+output:
+  pdf_document:
+    fig_height: 10
+    fig_width: 5
+---
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(cache=TRUE)
 ```
@@ -27,10 +33,11 @@ phy <- read.nexus("data/ShorebirdSupertree.tre")
 dat <- read.table("data/ratesdata.txt")
 ```
 
-The first thing we need to do is reconstruct ancestral states for our discrete explanatory variable. In this case that is developmental mode, here scored as a three level variable. The data and phylogeny have differing sets of species (the data contain a subset of species in the phylogeny) and we need to match them up first.
+The first thing we need to do is reconstruct ancestral states for our discrete explanatory variable. In this case that is developmental mode, here scored as a three level variable. The data and phylogeny have differing sets of species (the data contain a subset of species in the phylogeny) and we need to match them up first. I also ladderized the tree for later plotting purposes - phylogenies are more aesthetically pleasing when ladderized.
 
 ```{r}
 phy <- drop.tip(phy, setdiff(phy$tip.label, rownames(dat)))
+phy <- ladderize(phy)
 ```
 
 Next we create a new vector of character states for our explanatory variable
@@ -89,13 +96,36 @@ The table below gives a brief descritpion of the model output. The conclusions t
 |Single rate AICc     |Single rate small-sample AIC          |
 
 
-In the first example we allowed the mean value for sexual size dimorphism to differ among states. My personal view is that this is always a sensible thing to do, but we can test whether means differ while also allowing rates to differ. This is not hugely different from some of the models in the ```ouwie``` package that fit OU models with variable rates.
+In the first example we allowed the mean value for sexual size dimorphism to differ among states. My personal view is that this is always a sensible thing to do, but we can test whether means differ while also allowing rates to differ. This is not hugely different from some of the models in the ```ouwie``` package that fit OU models with variable rates except that here we do not estimate the alpha parameter of the OU model.
 
 ```{r}
-ML.RatePhylo(shorebirdRD, fixed=c(FALSE,FALSE,FALSE), common.mean=TRUE)
+ML.RatePhylo(shorebirdRD, fixed=c(TRUE,FALSE,FALSE), common.mean=TRUE)
 ```
 
 Now that we fix the mean value for SSD to be equal, we get some slightly odd results. The model AIC values are lower when we don't allow different means, suggesting that means do differ among states. If we were to ignore that then we might conclude that the highest rates are among taxa with intermediate developmental modes. We should be cautious with such a conclusion because only seven species have intermediate developmental mode. With such a low sample size rates are not estimated reliably and will likely have large confidence intervals. As a rule of thumb, there should be at least 20 species to each character state, although exactly how a model behaves depends also on the overall proportions of species in each state and the shape of the phylogeny. If we ignore the intermediate species, we still find evidence that rates of evolution are higher among precocial than semiprecocial taxa.
+
+It can be useful to visualise the outcome of the rates models by stretching or compressing the branch lengths of the phylogeny. This is a crude first pass at a function to do this. It simply stretches the branches by their relative rate and colours them according to state. The user specifies the colours and it is all passed to ape's plot.phylo function. It would be better if it could the output from ML.RatePhylo only, rather than needing the tree as well and also if it wasn't necessary to specify pretty=FALSE (i.e. I need to modify the output from ML.RatePhylo). Anyway, here is the function.
+
+```{r}
+plotTransTree <- function(phy, fit, col.state="black", ...) {
+  states <- sort(unique(phy$node.label))
+	col <- rep(NA, Nnode(phy))
+	for (i in 1:length(states)) {
+		phy$edge.length[phy$node.label==states[i]] <- phy$edge.length[phy$node.label==states[i]] * fit$MLRate[i]
+		col[phy$node.label==states[i]] <- col.state[i]	
+		}
+		plot.phylo(phy, edge.color=col, ...)
+		return(phy)
+		}
+```
+
+And here is an example>
+
+```{r}
+model.fit <- ML.RatePhylo(shorebirdRD, fixed=c(TRUE,FALSE,FALSE), common.mean=FALSE, pretty=FALSE)
+
+phy2<- plotTransTree(phy, model.fit, col.state=c("black", "red", "blue"), show.tip.label=FALSE)
+```
 
 
 
